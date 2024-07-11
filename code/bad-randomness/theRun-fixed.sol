@@ -16,7 +16,7 @@ contract TheRun is ReentrancyGuard, Ownable, VRFConsumerBase {
     uint256 private constant MIN_MULTIPLIER = 1100; // 110%
     uint256 private constant MIN_DEPOSIT = 500 * 10**15; // 0.5 ether
     uint256 private constant MAX_DEPOSIT = 20 ether;
-
+  
     uint256 private fees;
     uint256 private feeFrac = 20; // 2%
     uint256 private constant POT_FRAC = 30; // 3%
@@ -100,7 +100,7 @@ contract TheRun is ReentrancyGuard, Ownable, VRFConsumerBase {
         }
     }
 
-    function fulfillRandomness(bytes32 requestId, uint256 randomness) internal override {
+    function fulfillRandomness(bytes32, uint256 randomness) internal override {
         randomResult = randomness % 100 + 1;
         if (randomResult % 10 == 0) {
             Player storage player = players[players.length - 1];

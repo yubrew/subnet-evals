@@ -1,5 +1,4 @@
 .yarn
 .editorconfig
 .gitattributes
-.pnp*
 node_modules
