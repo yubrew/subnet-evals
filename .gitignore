@@ -2,3 +2,4 @@
 .editorconfig
 .gitattributes
 .pnp*
+node_modules
