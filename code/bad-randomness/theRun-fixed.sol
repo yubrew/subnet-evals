@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
+import "@chainlink/contracts/src/v0.8/vrf/VRFConsumerBase.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract TheRun is ReentrancyGuard, Ownable, VRFConsumerBase {
-    using SafeMath for uint256;
+    using Math for uint256;
 
     uint256 private balance;
     uint256 private payoutId;
@@ -39,7 +39,8 @@ contract TheRun is ReentrancyGuard, Ownable, VRFConsumerBase {
     event FeesCollected(uint256 amount);
 
     constructor(address _vrfCoordinator, address _linkToken, bytes32 _keyHash, uint256 _fee) 
-        VRFConsumerBase(_vrfCoordinator, _linkToken) 
+        VRFConsumerBase(_vrfCoordinator, _linkToken)
+        Ownable(msg.sender)
     {
         keyHash = _keyHash;
         fee = _fee;
@@ -53,24 +54,24 @@ contract TheRun is ReentrancyGuard, Ownable, VRFConsumerBase {
         require(msg.value >= MIN_DEPOSIT, "Deposit too small");
         uint256 deposit = msg.value;
         if (deposit > MAX_DEPOSIT) {
-            payable(msg.sender).transfer(deposit.sub(MAX_DEPOSIT));
+            payable(msg.sender).transfer(deposit - MAX_DEPOSIT);
             deposit = MAX_DEPOSIT;
         }
 
         uint256 totalMultiplier = MIN_MULTIPLIER;
         if (balance < 1 ether && players.length > 1) {
-            totalMultiplier = totalMultiplier.add(100);
+            totalMultiplier += 100;
         }
         if (players.length % 10 == 0 && players.length > 1) {
-            totalMultiplier = totalMultiplier.add(100);
+            totalMultiplier += 100;
         }
 
-        uint256 payout = deposit.mul(totalMultiplier).div(1000);
+        uint256 payout = deposit * totalMultiplier / 1000;
         players.push(Player(payable(msg.sender), payout, false));
 
-        winningPot = winningPot.add(deposit.mul(POT_FRAC).div(1000));
-        fees = fees.add(deposit.mul(feeFrac).div(1000));
-        balance = balance.add(deposit.mul(1000 - feeFrac - POT_FRAC).div(1000));
+        winningPot += deposit * POT_FRAC / 1000;
+        fees += deposit * feeFrac / 1000;
+        balance += deposit * (1000 - feeFrac - POT_FRAC) / 1000;
 
         emit Participated(msg.sender, deposit, payout);
 
@@ -86,7 +87,7 @@ contract TheRun is ReentrancyGuard, Ownable, VRFConsumerBase {
             Player storage player = players[payoutId];
             uint256 payoutAmount = player.payout;
             
-            balance = balance.sub(payoutAmount);
+            balance -= payoutAmount;
             player.paid = true;
             
             (bool success, ) = player.addr.call{value: payoutAmount}("");
@@ -95,12 +96,12 @@ contract TheRun is ReentrancyGuard, Ownable, VRFConsumerBase {
             emit PayoutMade(player.addr, payoutAmount);
             
             lastPayout = payoutAmount;
-            payoutId = payoutId.add(1);
+            payoutId += 1;
         }
     }
 
     function fulfillRandomness(bytes32 requestId, uint256 randomness) internal override {
-        randomResult = randomness.mod(100).add(1);
+        randomResult = randomness % 100 + 1;
         if (randomResult % 10 == 0) {
             Player storage player = players[players.length - 1];
             uint256 winAmount = winningPot;
@@ -115,7 +116,7 @@ contract TheRun is ReentrancyGuard, Ownable, VRFConsumerBase {
         require(fees > 0, "No fees to collect");
         uint256 amountToSend = fees;
         fees = 0;
-        feeFrac = feeFrac > 1 ? feeFrac.sub(1) : 0;
+        feeFrac = feeFrac > 1 ? feeFrac - 1 : 0;
         (bool success, ) = owner().call{value: amountToSend}("");
         require(success, "Fee transfer failed");
         emit FeesCollected(amountToSend);
@@ -123,10 +124,10 @@ contract TheRun is ReentrancyGuard, Ownable, VRFConsumerBase {
 
     function getAndReduceFeesByFraction(uint256 p) external onlyOwner {
         require(p > 0 && p <= 1000, "Invalid fraction");
-        uint256 amountToSend = fees.mul(p).div(1000);
-        fees = fees.sub(amountToSend);
+        uint256 amountToSend = fees * p / 1000;
+        fees -= amountToSend;
         if (fees == 0) {
-            feeFrac = feeFrac > 1 ? feeFrac.sub(1) : 0;
+            feeFrac = feeFrac > 1 ? feeFrac - 1 : 0;
         }
         (bool success, ) = owner().call{value: amountToSend}("");
         require(success, "Fee transfer failed");
@@ -138,7 +139,7 @@ contract TheRun is ReentrancyGuard, Ownable, VRFConsumerBase {
     }
 
     function watchBalanceInEther() public view returns (uint256) {
-        return balance.div(1 ether);
+        return balance / 1 ether;
     }
 
     function nextPayout() public view returns (uint256) {
@@ -168,6 +169,6 @@ contract TheRun is ReentrancyGuard, Ownable, VRFConsumerBase {
     }
 
     function payoutQueueSize() public view returns (uint256) {
-        return players.length.sub(payoutId);
+        return players.length - payoutId;
     }
 }
