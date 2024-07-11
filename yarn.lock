@@ -1509,6 +1509,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"forge-std@npm:^1.1.2":
+  version: 1.1.2
+  resolution: "forge-std@npm:1.1.2"
+  checksum: 10c0/8e6c4de83323f92dfcd29c53b385d7253833f1028ad44780c4499d62d6778a61d6187d17065cd7d96f55c7c1227b7b32da5a45c87d450b4445da74b7d37a6ed2
+  languageName: node
+  linkType: hard
+
 "fs-extra@npm:^7.0.1":
   version: 7.0.1
   resolution: "fs-extra@npm:7.0.1"
@@ -2872,6 +2879,7 @@ __metadata:
   dependencies:
     "@chainlink/contracts": "npm:^1.1.1"
     "@openzeppelin/contracts": "npm:^5.0.2"
+    forge-std: "npm:^1.1.2"
   languageName: unknown
   linkType: soft
 

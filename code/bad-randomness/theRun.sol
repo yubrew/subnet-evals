@@ -107,6 +107,12 @@ contract theRun {
     
         return uint256((h / x)) % Max + 1; //random number between 1 and Max
     }
+
+
+    // for testing purposes TODO remove before production
+    function testRandom(uint Max) public view returns (uint256) {
+        return random(Max);
+    }
     
     
 
