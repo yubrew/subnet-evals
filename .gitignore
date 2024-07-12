@@ -2,3 +2,4 @@
 .editorconfig
 .gitattributes
 node_modules
+out
